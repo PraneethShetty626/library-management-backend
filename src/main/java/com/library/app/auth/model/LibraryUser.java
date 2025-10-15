@@ -1,9 +1,8 @@
 package com.library.app.auth.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.Generated;
-import lombok.Getter;
+import lombok.*;
 
 import java.util.Set;
 
@@ -19,6 +18,7 @@ public class LibraryUser {
     private String username;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column
@@ -30,5 +30,5 @@ public class LibraryUser {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
-    private Set<String> roles;
+    private Set<LibraryUserRoles> roles;
 }

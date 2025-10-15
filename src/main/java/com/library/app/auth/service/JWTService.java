@@ -1,5 +1,6 @@
 package com.library.app.auth.service;
 
+import com.library.app.auth.model.LibraryUserRoles;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -30,7 +31,7 @@ public class JWTService {
         }
     }
 
-    public String generateToken(String username, Set<String> roles) {
+    public String generateToken(String username, Set<LibraryUserRoles> roles) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles);
 

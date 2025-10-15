@@ -2,7 +2,10 @@ package com.library.app.auth.service;
 
 import com.library.app.auth.config.JwtFilter;
 import com.library.app.auth.model.LibraryUser;
+import com.library.app.auth.model.LoginRequest;
+import com.library.app.auth.model.RegisterRequest;
 import com.library.app.auth.repository.LibraryUserRepository;
+import org.apache.catalina.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,18 +35,23 @@ public class LibraryUserService {
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
-    public void register(LibraryUser user) {
+    public void register(RegisterRequest user) {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new IllegalArgumentException("User already exists");
         }
+        LibraryUser newUser = new LibraryUser();
 
-        user.setPassword(encoder.encode(user.getPassword()));
-        logger.info("Registering user: {}", user.toString());
+        newUser.setRoles(user.getRoles());
+        newUser.setUsername(user.getUsername());
+        newUser.setPassword(encoder.encode(user.getPassword()));
 
-        userRepository.save(user);
+
+        logger.info("Registering user: {}", newUser.toString());
+
+        userRepository.save(newUser);
     }
 
-    public String verify(LibraryUser user) {
+    public String verify(LoginRequest user) {
         Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
         if (authentication.isAuthenticated()) {
             Optional<LibraryUser> _u =  userRepository.findByUsername(user.getUsername());
@@ -52,9 +60,7 @@ public class LibraryUserService {
                 throw new SecurityException("User not found");
             }
 
-            user.setRoles(_u.get().getRoles());
-
-            return jwtService.generateToken(user.getUsername(), user.getRoles());
+            return jwtService.generateToken(user.getUsername(), _u.get().getRoles());
         } else {
             throw new SecurityException("Invalid login credentials");
         }

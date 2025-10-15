@@ -1,6 +1,8 @@
 package com.library.app.auth.config;
 
 import com.library.app.auth.model.LibraryUser;
+import com.library.app.auth.model.LibraryUserRoles;
+import com.library.app.auth.model.RegisterRequest;
 import com.library.app.auth.repository.LibraryUserRepository;
 import com.library.app.auth.service.LibraryUserService;
 import org.hibernate.annotations.Comment;
@@ -19,16 +21,14 @@ public class AdminInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (userRepository.count() == 0) {
-            LibraryUser user = new LibraryUser();
+            RegisterRequest user = new RegisterRequest();
             user.setUsername("admin");
             user.setPassword("admin123");
-            user.setEnabled(true);
-            user.setExpired(false);
 
-            Set<String> roles = new HashSet<>();
+            Set<LibraryUserRoles> roles = new HashSet<>();
 
-            roles.add("ROLE_USER");
-            roles.add("ROLE_ADMIN");
+            roles.add(LibraryUserRoles.ROLE_ADMIN);
+            roles.add(LibraryUserRoles.ROLE_USER);
 
             user.setRoles(roles);
 

@@ -18,7 +18,7 @@ public class UserPrincipal implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return user.getRoles().stream()
-                .map(SimpleGrantedAuthority::new)
+                .map(libraryUserRoles -> new SimpleGrantedAuthority(libraryUserRoles.getValue()))
                 .toList();
     }
 

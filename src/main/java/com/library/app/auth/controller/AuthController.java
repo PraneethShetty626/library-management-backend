@@ -1,6 +1,8 @@
 package com.library.app.auth.controller;
 
 import com.library.app.auth.model.LibraryUser;
+import com.library.app.auth.model.LoginRequest;
+import com.library.app.auth.model.RegisterRequest;
 import com.library.app.auth.service.LibraryUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,8 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -20,7 +24,7 @@ public class AuthController {
     private LibraryUserService libraryUserService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody LibraryUser user) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest user) {
         try {
             libraryUserService.register(user);
             return ResponseEntity.status(HttpStatus.CREATED).body("success");
@@ -33,9 +37,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LibraryUser user) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest credentials) {
         try {
-            String token = libraryUserService.verify(user);
+            String token = libraryUserService.verify(credentials);
             return ResponseEntity.ok(token);
         }  catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

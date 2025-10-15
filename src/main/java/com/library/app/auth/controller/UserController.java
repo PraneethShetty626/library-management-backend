@@ -45,37 +45,48 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    // ---------------- GET USER BY ID ----------------
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        logger.info("GET /users/{} called", id);
-        return libraryUserService.getUserById(id)
-                .<ResponseEntity<?>>map(user -> {
-                    logger.info("User found: {}", user);
-                    return ResponseEntity.ok(user);
-                })
-                .orElseGet(() -> {
-                    logger.warn("User not found with ID: {}", id);
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body("User not found with ID: " + id);
-                });
-    }
+    // ---------------- GET USER (BY ID OR USERNAME) ----------------
+    @GetMapping("/user")
+    public ResponseEntity<?> getUser(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String username
+    ) {
+        logger.info("GET /users/user called with id={} username={}", id, username);
 
-    // ---------------- GET USER BY USERNAME ----------------
-    @GetMapping("/username/{username}")
-    public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
-        logger.info("GET /users/username/{} called", username);
+        // Case 1: both null → invalid
+        if (id == null && (username == null || username.trim().isEmpty())) {
+            logger.warn("Missing parameters: both id and username are null/empty");
+            return ResponseEntity.badRequest()
+                    .body("Either 'id' or 'username' parameter must be provided.");
+        }
+
+        // Case 2: search by ID if provided
+        if (id != null) {
+            return libraryUserService.getUserById(id)
+                    .<ResponseEntity<?>>map(user -> {
+                        logger.info("✅ User found by ID {}: {}", id, user.getUsername());
+                        return ResponseEntity.ok(user);
+                    })
+                    .orElseGet(() -> {
+                        logger.warn("❌ User not found with ID: {}", id);
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body("User not found with ID: " + id);
+                    });
+        }
+
+        // Case 3: search by username if ID not provided
         return libraryUserService.getUserByUsername(username)
                 .<ResponseEntity<?>>map(user -> {
-                    logger.info("User found: {}", user);
+                    logger.info("✅ User found by username '{}'", username);
                     return ResponseEntity.ok(user);
                 })
                 .orElseGet(() -> {
-                    logger.warn("User not found with username: {}", username);
+                    logger.warn("❌ User not found with username: {}", username);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND)
                             .body("User not found with username: " + username);
                 });
     }
+
 
     // ---------------- UPDATE USER ----------------
     @PutMapping("/{id}/updateName")
