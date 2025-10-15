@@ -11,6 +11,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -49,4 +50,5 @@ public class AuthController {
                     .body("An unexpected error occurred during login."+ e);
         }
     }
+
 }

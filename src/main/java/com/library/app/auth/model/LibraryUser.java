@@ -22,10 +22,10 @@ public class LibraryUser {
     private String password;
 
     @Column
-    private boolean expired;
+    private boolean expired = false;
 
     @Column(columnDefinition = "boolean default true")
-    private boolean enabled;
+    private boolean enabled = true;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))

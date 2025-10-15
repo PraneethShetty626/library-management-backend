@@ -4,6 +4,7 @@ import com.library.app.auth.service.AuthLibraryUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -47,14 +48,25 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        // ✅ Public endpoints (no authentication)
+                        // Public login
                         .requestMatchers("/auth/login").permitAll()
 
-                        // 🔒 Only ADMIN can register new users
-                        .requestMatchers("/auth/register").hasRole("ADMIN")
+                        // Admin-only registration
+                        .requestMatchers("/auth/register").hasRole("ADMIN").
+                        requestMatchers(HttpMethod.PATCH, "/users/*/password").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/users/*/updateName").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/users/**").hasRole("ADMIN")
+                        // Book management:
+                        // ADMIN can create/update/delete books
+                        .requestMatchers("/api/books/*/borrow").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/books/*/return").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/books/borrowed/*").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/books/borrowed").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/books").hasRole("ADMIN")
 
-                        // 👤 All other endpoints require USER role
-                        .anyRequest().hasRole("USER")
+                        .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
