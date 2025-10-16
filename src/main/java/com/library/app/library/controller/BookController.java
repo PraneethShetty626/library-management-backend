@@ -201,8 +201,16 @@ public class BookController {
                     existing.setAuthor(updatedBook.getAuthor());
                     existing.setIsbn(updatedBook.getIsbn());
                     existing.setAvailable(updatedBook.isAvailable());
+
+                    if (existing.isAvailable()) {
+                        existing.setBorrower(updatedBook.getBorrower());
+                    } else {
+                        existing.setBorrower(null); // Clear borrower if book is available
+                    }
                     existing.setBorrower(updatedBook.getBorrower());
+
                     return ResponseEntity.ok(bookService.saveBook(existing));
+
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Book not found with ID: " + id));
@@ -246,7 +254,7 @@ public class BookController {
             Optional<Book> _b = bookService.getBookById(id);
 
             if (_u.isEmpty() || _b.isEmpty() || _b.get().getBorrower() == null || !Objects.equals(_u.get().getId(), _b.get().getBorrower().getId())) {
-                return  ResponseEntity.status(HttpStatus.NOT_FOUND)
+                return  ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                         .body("You are not authorized to return this book.");
             }
 

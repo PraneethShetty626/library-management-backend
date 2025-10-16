@@ -1,10 +1,12 @@
 package com.library.app.auth.controller;
 
 import com.library.app.auth.model.LibraryUser;
+import com.library.app.auth.model.LibraryUserRoles;
 import com.library.app.auth.service.LibraryUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,6 +89,12 @@ public class UserController {
                 });
     }
 
+    @GetMapping("/user/current")
+    public ResponseEntity<?> getCurrentUser(
+            Principal principal
+    ){
+        return  getUser(null, principal.getName());
+    }
 
     // ---------------- UPDATE USER ----------------
     @PutMapping("/{id}/updateName")
@@ -94,6 +102,15 @@ public class UserController {
                                             @RequestParam String username,
                                             Principal principal) {
         logger.info("PUT /users/{}/updateName called by {} with new username={}", id, principal.getName(), username);
+        Optional<LibraryUser> currentUser = libraryUserService.getUserByUsername(principal.getName());
+
+        if (currentUser.isEmpty() || !currentUser.get().getId().equals(id)
+                && !currentUser.get().getRoles().contains(LibraryUserRoles.ROLE_ADMIN)) {
+            logger.warn("Unauthorized username update attempt by {}", principal.getName());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You are not allowed to update this password.");
+        }
+    try {
         return libraryUserService.updateUserName(id, username, principal.getName())
                 .<ResponseEntity<?>>map(user -> {
                     logger.info("Updated user: {}", user);
@@ -103,6 +120,10 @@ public class UserController {
                     logger.warn("User not found with ID: {}", id);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found.");
                 });
+    } catch (DataIntegrityViolationException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body("Username already exists. Please choose a different username.");
+    }
     }
 
     // ---------------- DISABLE USER ----------------
@@ -191,7 +212,7 @@ public class UserController {
             Optional<LibraryUser> currentUser = libraryUserService.getUserByUsername(principal.getName());
 
             if (currentUser.isEmpty() || !currentUser.get().getId().equals(id)
-                    && !currentUser.get().getRoles().contains("ROLE_ADMIN")) {
+                    && !currentUser.get().getRoles().contains(LibraryUserRoles.ROLE_ADMIN)) {
                 logger.warn("Unauthorized password update attempt by {}", principal.getName());
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body("You are not allowed to update this password.");

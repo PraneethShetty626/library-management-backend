@@ -21,6 +21,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,7 +33,6 @@ public class SecurityConfig {
 
     @Autowired
     private JwtFilter jwtFilter;
-
 
     @Autowired
     private AuthLibraryUserService libraryUserService;
@@ -43,27 +47,20 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
-
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults()) // ✅ enable CORS using the bean below
                 .authorizeHttpRequests(request -> request
-                        // Public login
                         .requestMatchers("/auth/login").permitAll()
-
-                        // Admin-only registration
-                        .requestMatchers("/auth/register").hasRole("ADMIN").
-                        requestMatchers(HttpMethod.PATCH, "/users/*/password").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/auth/register").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/password").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/users/*/updateName").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/users/user").hasAnyRole("USER", "ADMIN")
-
+                        .requestMatchers(HttpMethod.GET, "/users/user/*").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/users/**").hasRole("ADMIN")
-                        // Book management:
-                        // ADMIN can create/update/delete books
                         .requestMatchers("/api/books/*/borrow").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/books/*/return").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/books/borrowed/*").hasAnyRole("USER", "ADMIN")
@@ -71,13 +68,28 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/books").hasRole("ADMIN")
-
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    // ✅ CORS configuration allowing all origins
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of("*")); // allow all origins
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(false); // should remain false when using '*'
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

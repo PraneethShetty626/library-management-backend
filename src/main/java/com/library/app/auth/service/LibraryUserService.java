@@ -85,7 +85,6 @@ public class LibraryUserService {
 
     public Optional<LibraryUser> updateUserName(Long id, String newUserName, String currentUsername) {
         return userRepository.findById(id)
-                .filter(user -> user.getUsername().equals(currentUsername) || isAdmin(currentUsername))
                 .map(user -> {
                     user.setUsername(newUserName);
                     return userRepository.save(user);
